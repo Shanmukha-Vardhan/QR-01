@@ -12,6 +12,8 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
+import { PrivacyDashboard } from './PrivacyDashboard';
+import { Simulator } from './Simulator';
 
 // Types
 type ECL = 'L' | 'M' | 'Q' | 'H';
@@ -57,7 +59,8 @@ export const QRWorkspace = () => {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Debounce input for preview performance (FR-1.5)
-    const debouncedValue = useDebounce(inputValue, 100);
+    // Delay slightly increased to avoid flashing during rapid typing
+    const debouncedValue = useDebounce(inputValue, 150);
 
     // Validation (FR-1.1)
     const validateInput = (val: string) => {
@@ -99,9 +102,6 @@ export const QRWorkspace = () => {
             link.href = canvas.toDataURL('image/png');
             link.click();
         } else {
-            // Basic SVG export logic (simplified)
-            // Truly custom shape SVG export requires generating SVG XML string matching canvas logic
-            // For now, we'll alert or implement basic
             alert("SVG export with custom shapes is coming in next update. Please use PNG for now.");
         }
     };
@@ -197,7 +197,6 @@ export const QRWorkspace = () => {
 
                         // Clear area for logo (optional: draw background rect behind logo)
                         ctx.fillStyle = bgColor;
-                        // Draw rounded rect behind logo for cleaner look
                         ctx.beginPath();
                         if (ctx.roundRect) ctx.roundRect(lx - 5, ly - 5, logoSize + 10, logoSize + 10, 5);
                         else ctx.rect(lx - 5, ly - 5, logoSize + 10, logoSize + 10);
@@ -219,83 +218,82 @@ export const QRWorkspace = () => {
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 h-full">
-            {/* Left Panel: Input & Options */}
-            <div className="md:col-span-4 space-y-6">
-                <div className="border rounded-lg p-6 bg-card shadow-sm space-y-4">
+            {/* Left Panel: Input & Options (3 cols) */}
+            <div className="md:col-span-3 space-y-6">
+                <div className="border rounded-lg p-5 bg-card shadow-sm space-y-4 h-full">
                     <div className="flex items-center justify-between">
-                        <h2 className="text-xl font-bold flex items-center gap-2">
-                            <QrCode className="w-5 h-5" />
-                            Generator
+                        <h2 className="text-lg font-bold flex items-center gap-2">
+                            <Settings2 className="w-5 h-5 text-primary" />
+                            Config
                         </h2>
                     </div>
 
                     {/* Tabs for different controls */}
                     <Tabs defaultValue="content" className="w-full">
-                        <TabsList className="grid w-full grid-cols-3">
-                            <TabsTrigger value="content">Content</TabsTrigger>
-                            <TabsTrigger value="style">Style</TabsTrigger>
-                            <TabsTrigger value="logo">Logo</TabsTrigger>
+                        <TabsList className="grid w-full grid-cols-3 h-9">
+                            <TabsTrigger value="content" className="text-xs">Data</TabsTrigger>
+                            <TabsTrigger value="style" className="text-xs">Style</TabsTrigger>
+                            <TabsTrigger value="logo" className="text-xs">Logo</TabsTrigger>
                         </TabsList>
 
                         <TabsContent value="content" className="space-y-4 pt-4">
                             {/* FR-1.1: Input */}
                             <div className="space-y-2">
-                                <Label>Content / URL</Label>
+                                <Label className="text-xs">Content / URL</Label>
                                 <textarea
                                     className={cn(
-                                        "w-full p-3 border rounded-md h-32 bg-background resize-none focus:ring-2 focus:ring-primary/20 outline-none transition-all",
+                                        "w-full p-2 border rounded-md h-32 bg-background resize-none focus:ring-2 focus:ring-primary/20 outline-none transition-all text-sm",
                                         error ? "border-destructive focus:ring-destructive/20" : "border-input"
                                     )}
-                                    placeholder="Enter your website URL or text here..."
+                                    placeholder="https://example.com"
                                     value={inputValue}
                                     onChange={(e) => setInputValue(e.target.value)}
                                 />
                                 {error ? (
-                                    <div className="flex items-center gap-2 text-destructive text-sm animate-in slide-in-from-top-1">
-                                        <AlertCircle className="w-4 h-4" />
+                                    <div className="flex items-center gap-2 text-destructive text-xs animate-in slide-in-from-top-1">
+                                        <AlertCircle className="w-3 h-3" />
                                         <span>{error}</span>
                                     </div>
                                 ) : (
-                                    <div className="flex justify-between text-xs text-muted-foreground">
-                                        <span>Supports URLs, Text, WiFi, etc.</span>
-                                        <span>{inputValue.length} / 2048 chars</span>
+                                    <div className="flex justify-between text-[10px] text-muted-foreground">
+                                        <span>{inputValue.length} / 2048</span>
                                     </div>
                                 )}
                             </div>
 
                             {/* FR-1.6: ECL Selection */}
-                            <div className="space-y-3 pt-4 border-t">
-                                <Label>Error Correction Level</Label>
+                            <div className="space-y-2 pt-2 border-t">
+                                <Label className="text-xs">Error Correction</Label>
                                 <div className="grid grid-cols-2 gap-2">
                                     {ECL_OPTIONS.map((option) => (
                                         <button
                                             key={option.value}
                                             onClick={() => setEcl(option.value)}
                                             className={cn(
-                                                "flex flex-col items-start p-2 rounded-md border text-left transition-all hover:bg-muted/50",
+                                                "flex flex-col items-start p-1.5 rounded-md border text-left transition-all hover:bg-muted/50",
                                                 ecl === option.value
                                                     ? "border-primary bg-primary/5 ring-1 ring-primary"
                                                     : "border-input bg-transparent"
                                             )}
                                         >
-                                            <span className="text-xs font-semibold">{option.label}</span>
-                                            <span className="text-[10px] text-muted-foreground line-clamp-1">{option.description}</span>
+                                            <span className="text-xs font-semibold">{option.label.split(' ')[0]}</span>
+                                            <span className="text-[9px] text-muted-foreground line-clamp-1">{option.description}</span>
                                         </button>
                                     ))}
                                 </div>
                             </div>
                         </TabsContent>
 
-                        <TabsContent value="style" className="space-y-6 pt-4">
+                        <TabsContent value="style" className="space-y-4 pt-4">
                             {/* FR-2.1, FR-2.2: Colors */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label>Foreground Color</Label>
+                            <div className="grid grid-cols-2 gap-2">
+                                <div className="space-y-1">
+                                    <Label className="text-xs">Foreground</Label>
                                     <Popover>
                                         <PopoverTrigger asChild>
-                                            <Button variant="outline" className="w-full justify-start gap-2 h-10 px-3">
+                                            <Button variant="outline" className="w-full justify-start gap-2 h-8 px-2">
                                                 <div className="w-4 h-4 rounded-full border shadow-sm" style={{ backgroundColor: fgColor }} />
-                                                <span className="text-xs font-mono">{fgColor}</span>
+                                                <span className="text-[10px] font-mono truncate">{fgColor}</span>
                                             </Button>
                                         </PopoverTrigger>
                                         <PopoverContent className="w-auto p-3">
@@ -303,13 +301,13 @@ export const QRWorkspace = () => {
                                         </PopoverContent>
                                     </Popover>
                                 </div>
-                                <div className="space-y-2">
-                                    <Label>Background Color</Label>
+                                <div className="space-y-1">
+                                    <Label className="text-xs">Background</Label>
                                     <Popover>
                                         <PopoverTrigger asChild>
-                                            <Button variant="outline" className="w-full justify-start gap-2 h-10 px-3">
+                                            <Button variant="outline" className="w-full justify-start gap-2 h-8 px-2">
                                                 <div className="w-4 h-4 rounded-full border shadow-sm" style={{ backgroundColor: bgColor }} />
-                                                <span className="text-xs font-mono">{bgColor}</span>
+                                                <span className="text-[10px] font-mono truncate">{bgColor}</span>
                                             </Button>
                                         </PopoverTrigger>
                                         <PopoverContent className="w-auto p-3">
@@ -320,36 +318,36 @@ export const QRWorkspace = () => {
                             </div>
 
                             {/* FR-2.3: Shapes */}
-                            <div className="space-y-3 pt-4 border-t">
-                                <Label>Module Shape</Label>
-                                <div className="grid grid-cols-3 gap-2">
+                            <div className="space-y-2 pt-2 border-t">
+                                <Label className="text-xs">Module Shape</Label>
+                                <div className="grid grid-cols-3 gap-1">
                                     {SHAPE_OPTIONS.map((option) => (
                                         <button
                                             key={option.value}
                                             onClick={() => setShape(option.value)}
                                             className={cn(
-                                                "flex flex-col items-center justify-center p-3 rounded-md border text-center transition-all hover:bg-muted/50 gap-2",
+                                                "flex flex-col items-center justify-center p-2 rounded-md border text-center transition-all hover:bg-muted/50 gap-1",
                                                 shape === option.value
                                                     ? "border-primary bg-primary/5 ring-1 ring-primary"
                                                     : "border-input bg-transparent"
                                             )}
                                         >
                                             {/* Icons for shapes */}
-                                            {option.value === 'square' && <div className="w-4 h-4 bg-current" />}
-                                            {option.value === 'rounded' && <div className="w-4 h-4 bg-current rounded-sm" />}
-                                            {option.value === 'dots' && <div className="w-4 h-4 bg-current rounded-full" />}
-                                            <span className="text-xs font-medium">{option.label}</span>
+                                            {option.value === 'square' && <div className="w-3 h-3 bg-current" />}
+                                            {option.value === 'rounded' && <div className="w-3 h-3 bg-current rounded-sm" />}
+                                            {option.value === 'dots' && <div className="w-3 h-3 bg-current rounded-full" />}
+                                            <span className="text-[10px] font-medium">{option.label}</span>
                                         </button>
                                     ))}
                                 </div>
                             </div>
 
                             {/* FR-2.6: Size & Margin */}
-                            <div className="space-y-4 pt-4 border-t">
-                                <div className="space-y-2">
+                            <div className="space-y-4 pt-2 border-t">
+                                <div className="space-y-1">
                                     <div className="flex justify-between">
-                                        <Label>Size (px)</Label>
-                                        <span className="text-xs text-muted-foreground">{size[0]}px</span>
+                                        <Label className="text-xs">Size</Label>
+                                        <span className="text-[10px] text-muted-foreground">{size[0]}px</span>
                                     </div>
                                     <Slider
                                         value={size}
@@ -357,12 +355,13 @@ export const QRWorkspace = () => {
                                         min={128}
                                         max={1024}
                                         step={32}
+                                        className="py-1"
                                     />
                                 </div>
-                                <div className="space-y-2">
+                                <div className="space-y-1">
                                     <div className="flex justify-between">
-                                        <Label>Quiet Zone (Margin)</Label>
-                                        <span className="text-xs text-muted-foreground">{margin[0]} modules</span>
+                                        <Label className="text-xs">Margin</Label>
+                                        <span className="text-[10px] text-muted-foreground">{margin[0]} mod</span>
                                     </div>
                                     <Slider
                                         value={margin}
@@ -370,6 +369,7 @@ export const QRWorkspace = () => {
                                         min={0}
                                         max={10}
                                         step={1}
+                                        className="py-1"
                                     />
                                 </div>
                             </div>
@@ -377,7 +377,7 @@ export const QRWorkspace = () => {
 
                         <TabsContent value="logo" className="pt-4 space-y-4">
                             <div
-                                className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-8 text-center space-y-2 text-muted-foreground hover:bg-muted/50 transition-colors cursor-pointer relative"
+                                className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-6 text-center space-y-2 text-muted-foreground hover:bg-muted/50 transition-colors cursor-pointer relative min-h-[120px]"
                                 onClick={() => fileInputRef.current?.click()}
                             >
                                 <input
@@ -403,34 +403,26 @@ export const QRWorkspace = () => {
                                     </div>
                                 ) : (
                                     <>
-                                        <ImageIcon className="w-8 h-8 opacity-50" />
-                                        <p className="text-sm font-medium">Click to upload logo</p>
-                                        <p className="text-xs text-muted-foreground">Supports PNG, JPG, SVG</p>
+                                        <ImageIcon className="w-6 h-6 opacity-50" />
+                                        <p className="text-xs font-medium">Click to upload</p>
                                     </>
                                 )}
                             </div>
-
-                            {logo && (
-                                <div className="text-xs text-center text-muted-foreground">
-                                    Logo will be centered over the QR code.
-                                    <br />Tip: Use 'Quartile' or 'High' error correction.
-                                </div>
-                            )}
                         </TabsContent>
                     </Tabs>
                 </div>
             </div>
 
-            {/* Center Panel: Preview */}
-            <div className="md:col-span-8">
-                <div className="h-full border rounded-lg p-8 bg-muted/30 flex flex-col items-center justify-center relative min-h-[500px]">
+            {/* Center Panel: Preview (5 cols) */}
+            <div className="md:col-span-5">
+                <div className="h-full border rounded-lg p-6 bg-muted/30 flex flex-col items-center justify-center relative min-h-[500px]">
                     {/* Info Badge */}
                     <div className="absolute top-4 right-4 flex gap-2">
-                        <div className="text-xs font-mono text-muted-foreground/70 border px-2 py-1 rounded bg-background/50 backdrop-blur">
-                            ECL: {ecl}
+                        <div className="text-[10px] font-mono text-muted-foreground/70 border px-1.5 py-0.5 rounded bg-background/50 backdrop-blur">
+                            {ecl}
                         </div>
-                        <div className="text-xs font-mono text-muted-foreground/70 border px-2 py-1 rounded bg-background/50 backdrop-blur">
-                            SIZE: {size[0]}px
+                        <div className="text-[10px] font-mono text-muted-foreground/70 border px-1.5 py-0.5 rounded bg-background/50 backdrop-blur">
+                            {size[0]}px
                         </div>
                     </div>
 
@@ -438,35 +430,45 @@ export const QRWorkspace = () => {
                         {!inputValue ? (
                             <div className="w-[300px] h-[300px] flex flex-col items-center justify-center text-muted-foreground bg-gray-50/50 rounded-lg border-2 border-dashed">
                                 <QrCode className="w-12 h-12 opacity-20 mb-3" />
-                                <span className="text-sm font-medium opacity-60">Start typing to generate...</span>
+                                <span className="text-sm font-medium opacity-60">Start typing...</span>
                             </div>
                         ) : (
                             /* FR-1.5: Canvas Preview */
-                            <canvas ref={canvasRef} className="rounded-lg shadow-sm" />
+                            <canvas ref={canvasRef} className="rounded-lg shadow-sm w-full h-auto max-w-[300px]" />
                         )}
                     </div>
 
-                    <div className="mt-8 flex gap-4">
+                    <div className="mt-8 flex gap-3 w-full max-w-[300px]">
                         <Button
-                            variant="outline"
+                            variant="default"
                             disabled={!inputValue || !!error}
-                            className="gap-2"
+                            className="flex-1 gap-2"
                             onClick={() => handleDownload('png')}
                         >
                             <Download className="w-4 h-4" />
-                            Download PNG
+                            PNG
                         </Button>
                         <Button
                             variant="outline"
                             disabled={!inputValue || !!error}
-                            className="gap-2"
+                            className="flex-1 gap-2"
                             onClick={() => handleDownload('svg')}
                         >
                             <Download className="w-4 h-4" />
-                            Download SVG
+                            SVG
                         </Button>
                     </div>
                 </div>
+            </div>
+
+            {/* Right Panel: Dashboard & Simulator (4 cols) */}
+            <div className="md:col-span-4 space-y-4">
+                <PrivacyDashboard />
+                <Simulator
+                    value={debouncedValue}
+                    fgColor={fgColor}
+                    bgColor={bgColor}
+                />
             </div>
         </div>
     );
