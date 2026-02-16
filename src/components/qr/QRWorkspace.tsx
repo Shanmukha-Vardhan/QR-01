@@ -11,25 +11,13 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
 import { PrivacyDashboard } from './PrivacyDashboard';
 import { Simulator } from './Simulator';
 
 // Types
 type ECL = 'L' | 'M' | 'Q' | 'H';
 type Shape = 'square' | 'rounded' | 'dots';
-
-interface QRConfig {
-    value: string;
-    ecl: ECL;
-    size: number;
-    margin: number;
-    color: {
-        dark: string;
-        light: string;
-    };
-    shape: Shape;
-}
+type GradientType = 'none' | 'linear' | 'radial';
 
 const ECL_OPTIONS: { value: ECL; label: string; description: string }[] = [
     { value: 'L', label: 'Low (7%)', description: 'Best for simple data' },
@@ -44,6 +32,12 @@ const SHAPE_OPTIONS: { value: Shape; label: string }[] = [
     { value: 'dots', label: 'Dots' },
 ];
 
+const GRADIENT_OPTIONS: { value: GradientType; label: string }[] = [
+    { value: 'none', label: 'Solid' },
+    { value: 'linear', label: 'Linear' },
+    { value: 'radial', label: 'Radial' },
+];
+
 export const QRWorkspace = () => {
     // State
     const [inputValue, setInputValue] = useState('');
@@ -51,6 +45,8 @@ export const QRWorkspace = () => {
     const [fgColor, setFgColor] = useState('#000000');
     const [bgColor, setBgColor] = useState('#ffffff');
     const [shape, setShape] = useState<Shape>('square');
+    const [gradientType, setGradientType] = useState<GradientType>('none');
+    const [gradientColor2, setGradientColor2] = useState('#4f46e5'); // Default purple/indigo
     const [size, setSize] = useState([300]);
     const [margin, setMargin] = useState([2]);
     const [logo, setLogo] = useState<string | null>(null);
@@ -90,19 +86,121 @@ export const QRWorkspace = () => {
         }
     };
 
+    // Generate SVG String (FR-5.1)
+    const generateSVG = (qrData: any, currentSize: number, currentMargin: number) => {
+        const moduleCount = qrData.modules.size;
+        const scale = currentSize / (moduleCount + currentMargin * 2);
+        const offset = currentMargin * scale;
+
+        let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="${currentSize}" height="${currentSize}" viewBox="0 0 ${currentSize} ${currentSize}">`;
+
+        // Defs for gradients
+        svgContent += '<defs>';
+        if (gradientType === 'linear') {
+            svgContent += `
+                <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:${fgColor};stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:${gradientColor2};stop-opacity:1" />
+                </linearGradient>
+            `;
+        } else if (gradientType === 'radial') {
+            svgContent += `
+                <radialGradient id="grad" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                    <stop offset="0%" style="stop-color:${fgColor};stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:${gradientColor2};stop-opacity:1" />
+                </radialGradient>
+            `;
+        }
+        svgContent += '</defs>';
+
+        // Background
+        svgContent += `<rect width="100%" height="100%" fill="${bgColor}" />`;
+
+        // Modules
+        const fill = gradientType === 'none' ? fgColor : 'url(#grad)';
+
+        qrData.modules.data.forEach((isDark: boolean, index: number) => {
+            if (!isDark) return;
+
+            const row = Math.floor(index / moduleCount);
+            const col = index % moduleCount;
+
+            const x = offset + col * scale;
+            const y = offset + row * scale;
+            const w = scale;
+            const h = scale;
+
+            // Logo clearing check: simplified
+            // In a real implementation, we'd check if the module overlaps with the logo area
+            // But since qrcode lib doesn't know about our logo, we just draw everything for SVG
+            // Alternatively, we can calculate overlap here similar to canvas logic:
+            if (logo) {
+                const logoSize = currentSize * 0.2;
+                const lx = (currentSize - logoSize) / 2;
+                const ly = (currentSize - logoSize) / 2;
+                // A simple bounding box check
+                if (x + w > lx && x < lx + logoSize && y + h > ly && y < ly + logoSize) {
+                    return; // Don't draw modules behind logo
+                }
+            }
+
+            if (shape === 'rounded') {
+                const r = scale * 0.35;
+                svgContent += `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${r}" fill="${fill}" />`;
+            } else if (shape === 'dots') {
+                const cx = x + w / 2;
+                const cy = y + h / 2;
+                const r = (w / 2) * 0.85;
+                svgContent += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}" />`;
+            } else {
+                svgContent += `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${fill}" />`;
+            }
+        });
+
+        // Logo Embedding in SVG
+        if (logo) {
+            const logoSize = currentSize * 0.2;
+            const lx = (currentSize - logoSize) / 2;
+            const ly = (currentSize - logoSize) / 2;
+
+            // Background rect for logo
+            svgContent += `<rect x="${lx - 5}" y="${ly - 5}" width="${logoSize + 10}" height="${logoSize + 10}" rx="5" fill="${bgColor}" />`;
+
+            // Image tag
+            svgContent += `<image href="${logo}" x="${lx}" y="${ly}" width="${logoSize}" height="${logoSize}" />`;
+        }
+
+        svgContent += '</svg>';
+        return svgContent;
+    };
+
+
     // Handle Downloads (FR-5.1)
     const handleDownload = (format: 'png' | 'svg') => {
-        if (!canvasRef.current) return;
-
-        const canvas = canvasRef.current;
-        const link = document.createElement('a');
+        if (!canvasRef.current || !debouncedValue) return;
 
         if (format === 'png') {
-            link.download = 'qr-code.png';
+            const canvas = canvasRef.current;
+            const link = document.createElement('a');
+            link.download = `qr-code-${Date.now()}.png`;
             link.href = canvas.toDataURL('image/png');
             link.click();
         } else {
-            alert("SVG export with custom shapes is coming in next update. Please use PNG for now.");
+            // Generate SVG
+            try {
+                const qrData = QRCode.create(debouncedValue, { errorCorrectionLevel: ecl });
+                const svgString = generateSVG(qrData, size[0], margin[0]);
+                const blob = new Blob([svgString], { type: 'image/svg+xml' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.download = `qr-code-${Date.now()}.svg`;
+                link.href = url;
+                link.click();
+                URL.revokeObjectURL(url);
+            } catch (e) {
+                console.error("SVG generation failed", e);
+                setError("Failed to generate SVG");
+            }
         }
     };
 
@@ -119,16 +217,12 @@ export const QRWorkspace = () => {
             return;
         }
 
-        // Generate QR (FR-1.5, FR-1.6, FR-2.3)
-        const generateQR = async () => {
+        // Generate QR on Canvas (FR-1.5, FR-1.6, FR-2.3, FR-2.x)
+        const generateCanvasQR = async () => {
             if (!canvasRef.current) return;
 
             try {
-                // Get raw QR data
-                const qrData = QRCode.create(debouncedValue, {
-                    errorCorrectionLevel: ecl,
-                });
-
+                const qrData = QRCode.create(debouncedValue, { errorCorrectionLevel: ecl });
                 const canvas = canvasRef.current;
                 const ctx = canvas.getContext('2d');
                 if (!ctx) return;
@@ -136,7 +230,6 @@ export const QRWorkspace = () => {
                 const moduleCount = qrData.modules.size;
                 const currentSize = size[0];
                 const currentMargin = margin[0];
-
                 const scale = currentSize / (moduleCount + currentMargin * 2);
 
                 // Adjust canvas size for hi-dpi
@@ -151,12 +244,25 @@ export const QRWorkspace = () => {
                 ctx.fillStyle = bgColor;
                 ctx.fillRect(0, 0, currentSize, currentSize);
 
-                // Draw modules
-                ctx.fillStyle = fgColor;
+                // Setup Foreground Style (Color or Gradient)
+                let fillStyle: string | CanvasGradient = fgColor;
+                if (gradientType === 'linear') {
+                    const gradient = ctx.createLinearGradient(0, 0, currentSize, currentSize);
+                    gradient.addColorStop(0, fgColor);
+                    gradient.addColorStop(1, gradientColor2);
+                    fillStyle = gradient;
+                } else if (gradientType === 'radial') {
+                    // Center radial gradient
+                    const gradient = ctx.createRadialGradient(currentSize / 2, currentSize / 2, currentSize / 10, currentSize / 2, currentSize / 2, currentSize / 1.5);
+                    gradient.addColorStop(0, fgColor);
+                    gradient.addColorStop(1, gradientColor2);
+                    fillStyle = gradient;
+                }
+                ctx.fillStyle = fillStyle;
 
                 const offset = currentMargin * scale;
 
-                qrData.modules.data.forEach((isDark, index) => {
+                qrData.modules.data.forEach((isDark: boolean, index: number) => {
                     if (!isDark) return;
 
                     const row = Math.floor(index / moduleCount);
@@ -167,6 +273,7 @@ export const QRWorkspace = () => {
                     const w = scale;
                     const h = scale;
 
+                    // Draw module based on shape
                     ctx.beginPath();
                     if (shape === 'rounded') {
                         const r = scale * 0.35;
@@ -186,16 +293,16 @@ export const QRWorkspace = () => {
                     ctx.fill();
                 });
 
-                // Draw Logo (FR-2.5)
+                // Draw Logo
                 if (logo) {
                     const img = new Image();
                     img.src = logo;
                     img.onload = () => {
-                        const logoSize = currentSize * 0.2; // 20% of QR size
+                        const logoSize = currentSize * 0.2;
                         const lx = (currentSize - logoSize) / 2;
                         const ly = (currentSize - logoSize) / 2;
 
-                        // Clear area for logo (optional: draw background rect behind logo)
+                        // Clear area behind logo
                         ctx.fillStyle = bgColor;
                         ctx.beginPath();
                         if (ctx.roundRect) ctx.roundRect(lx - 5, ly - 5, logoSize + 10, logoSize + 10, 5);
@@ -206,15 +313,15 @@ export const QRWorkspace = () => {
                     };
                 }
 
-            } catch (err: any) {
+            } catch (err) {
                 console.error(err);
-                setError('Failed to generate QR code');
+                setError('Rendering failed');
             }
         };
 
-        generateQR();
+        generateCanvasQR();
 
-    }, [debouncedValue, ecl, fgColor, bgColor, shape, size, margin, logo]);
+    }, [debouncedValue, ecl, fgColor, bgColor, shape, gradientType, gradientColor2, size, margin, logo]);
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 h-full">
@@ -237,7 +344,7 @@ export const QRWorkspace = () => {
                         </TabsList>
 
                         <TabsContent value="content" className="space-y-4 pt-4">
-                            {/* FR-1.1: Input */}
+                            {/* Input */}
                             <div className="space-y-2">
                                 <Label className="text-xs">Content / URL</Label>
                                 <textarea
@@ -261,7 +368,7 @@ export const QRWorkspace = () => {
                                 )}
                             </div>
 
-                            {/* FR-1.6: ECL Selection */}
+                            {/* ECL Selection */}
                             <div className="space-y-2 pt-2 border-t">
                                 <Label className="text-xs">Error Correction</Label>
                                 <div className="grid grid-cols-2 gap-2">
@@ -285,39 +392,79 @@ export const QRWorkspace = () => {
                         </TabsContent>
 
                         <TabsContent value="style" className="space-y-4 pt-4">
-                            {/* FR-2.1, FR-2.2: Colors */}
-                            <div className="grid grid-cols-2 gap-2">
+                            {/* Colors & Gradient */}
+                            <div className="space-y-3">
                                 <div className="space-y-1">
-                                    <Label className="text-xs">Foreground</Label>
-                                    <Popover>
-                                        <PopoverTrigger asChild>
-                                            <Button variant="outline" className="w-full justify-start gap-2 h-8 px-2">
-                                                <div className="w-4 h-4 rounded-full border shadow-sm" style={{ backgroundColor: fgColor }} />
-                                                <span className="text-[10px] font-mono truncate">{fgColor}</span>
-                                            </Button>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-auto p-3">
-                                            <HexColorPicker color={fgColor} onChange={setFgColor} />
-                                        </PopoverContent>
-                                    </Popover>
+                                    <div className="flex justify-between items-center">
+                                        <Label className="text-xs">Color Style</Label>
+                                        <div className="flex gap-1 bg-muted p-0.5 rounded-md">
+                                            {GRADIENT_OPTIONS.map(g => (
+                                                <button
+                                                    key={g.value}
+                                                    onClick={() => setGradientType(g.value)}
+                                                    className={cn(
+                                                        "text-[10px] px-2 py-0.5 rounded-sm transition-all",
+                                                        gradientType === g.value ? "bg-white shadow text-primary font-medium" : "text-muted-foreground hover:text-foreground"
+                                                    )}
+                                                >
+                                                    {g.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="space-y-1">
-                                    <Label className="text-xs">Background</Label>
-                                    <Popover>
-                                        <PopoverTrigger asChild>
-                                            <Button variant="outline" className="w-full justify-start gap-2 h-8 px-2">
-                                                <div className="w-4 h-4 rounded-full border shadow-sm" style={{ backgroundColor: bgColor }} />
-                                                <span className="text-[10px] font-mono truncate">{bgColor}</span>
-                                            </Button>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-auto p-3">
-                                            <HexColorPicker color={bgColor} onChange={setBgColor} />
-                                        </PopoverContent>
-                                    </Popover>
+
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div className="space-y-1">
+                                        <Label className="text-xs">Primary Color</Label>
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                                <Button variant="outline" className="w-full justify-start gap-2 h-8 px-2">
+                                                    <div className="w-4 h-4 rounded-full border shadow-sm" style={{ backgroundColor: fgColor }} />
+                                                    <span className="text-[10px] font-mono truncate">{fgColor}</span>
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-auto p-3">
+                                                <HexColorPicker color={fgColor} onChange={setFgColor} />
+                                            </PopoverContent>
+                                        </Popover>
+                                    </div>
+
+                                    {gradientType !== 'none' && (
+                                        <div className="space-y-1 animate-in fade-in zoom-in-95">
+                                            <Label className="text-xs">Gradient End</Label>
+                                            <Popover>
+                                                <PopoverTrigger asChild>
+                                                    <Button variant="outline" className="w-full justify-start gap-2 h-8 px-2">
+                                                        <div className="w-4 h-4 rounded-full border shadow-sm" style={{ backgroundColor: gradientColor2 }} />
+                                                        <span className="text-[10px] font-mono truncate">{gradientColor2}</span>
+                                                    </Button>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-auto p-3">
+                                                    <HexColorPicker color={gradientColor2} onChange={setGradientColor2} />
+                                                </PopoverContent>
+                                            </Popover>
+                                        </div>
+                                    )}
+
+                                    <div className={cn("space-y-1", gradientType === 'none' ? "col-span-1" : "col-span-2")}>
+                                        <Label className="text-xs">Background</Label>
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                                <Button variant="outline" className="w-full justify-start gap-2 h-8 px-2">
+                                                    <div className="w-4 h-4 rounded-full border shadow-sm" style={{ backgroundColor: bgColor }} />
+                                                    <span className="text-[10px] font-mono truncate">{bgColor}</span>
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-auto p-3">
+                                                <HexColorPicker color={bgColor} onChange={setBgColor} />
+                                            </PopoverContent>
+                                        </Popover>
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* FR-2.3: Shapes */}
+                            {/* Shapes */}
                             <div className="space-y-2 pt-2 border-t">
                                 <Label className="text-xs">Module Shape</Label>
                                 <div className="grid grid-cols-3 gap-1">
@@ -332,7 +479,6 @@ export const QRWorkspace = () => {
                                                     : "border-input bg-transparent"
                                             )}
                                         >
-                                            {/* Icons for shapes */}
                                             {option.value === 'square' && <div className="w-3 h-3 bg-current" />}
                                             {option.value === 'rounded' && <div className="w-3 h-3 bg-current rounded-sm" />}
                                             {option.value === 'dots' && <div className="w-3 h-3 bg-current rounded-full" />}
@@ -342,7 +488,7 @@ export const QRWorkspace = () => {
                                 </div>
                             </div>
 
-                            {/* FR-2.6: Size & Margin */}
+                            {/* Size & Margin */}
                             <div className="space-y-4 pt-2 border-t">
                                 <div className="space-y-1">
                                     <div className="flex justify-between">
@@ -416,7 +562,6 @@ export const QRWorkspace = () => {
             {/* Center Panel: Preview (5 cols) */}
             <div className="md:col-span-5">
                 <div className="h-full border rounded-lg p-6 bg-muted/30 flex flex-col items-center justify-center relative min-h-[500px]">
-                    {/* Info Badge */}
                     <div className="absolute top-4 right-4 flex gap-2">
                         <div className="text-[10px] font-mono text-muted-foreground/70 border px-1.5 py-0.5 rounded bg-background/50 backdrop-blur">
                             {ecl}
@@ -433,7 +578,6 @@ export const QRWorkspace = () => {
                                 <span className="text-sm font-medium opacity-60">Start typing...</span>
                             </div>
                         ) : (
-                            /* FR-1.5: Canvas Preview */
                             <canvas ref={canvasRef} className="rounded-lg shadow-sm w-full h-auto max-w-[300px]" />
                         )}
                     </div>
