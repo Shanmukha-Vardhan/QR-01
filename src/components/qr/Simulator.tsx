@@ -50,7 +50,7 @@ export const Simulator = ({ value, fgColor, bgColor }: SimulatorProps) => {
     };
 
     return (
-        <Card className="h-full flex flex-col">
+        <Card className="flex flex-col">
             <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium flex items-center justify-between">
                     <div className="flex items-center gap-2">
