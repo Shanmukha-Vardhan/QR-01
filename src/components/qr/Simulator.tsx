@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useState } from 'react';
+import QRCode from 'qrcode';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from "@/components/ui/button";
@@ -27,7 +28,7 @@ const QRCanvas = ({ value, fgColor, bgColor, className }: SimulatorProps & { cla
                 dark: fgColor,
                 light: bgColor, // Use the actual background color
             }
-        }, (error) => {
+        }, (error: Error | null | undefined) => {
             if (error) console.error(error);
         });
     }, [value, fgColor, bgColor]);

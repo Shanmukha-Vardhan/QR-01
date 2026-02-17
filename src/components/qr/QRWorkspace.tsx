@@ -290,7 +290,7 @@ export const QRWorkspace = () => {
 
                 const offset = currentMargin * scale;
 
-                qrData.modules.data.forEach((isDark: boolean, index: number) => {
+                qrData.modules.data.forEach((isDark: number, index: number) => {
                     if (!isDark) return;
 
                     const row = Math.floor(index / moduleCount);
