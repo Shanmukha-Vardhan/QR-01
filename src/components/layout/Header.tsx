@@ -18,8 +18,14 @@ export const Header = () => {
                 </nav>
 
                 <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="sm">GitHub</Button>
-                    <Button size="sm">Get Started</Button>
+                    <Button variant="ghost" size="sm" asChild>
+                        <Link href="https://github.com/Shanmukha-Vardhan" target="_blank" className="gap-2">
+                            GitHub
+                        </Link>
+                    </Button>
+                    <Button size="sm" onClick={() => document.getElementById('workspace')?.scrollIntoView({ behavior: 'smooth' })}>
+                        Get Started
+                    </Button>
                 </div>
             </div>
         </header>
