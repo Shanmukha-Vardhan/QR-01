@@ -14,6 +14,7 @@ import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PrivacyDashboard } from './PrivacyDashboard';
 import { Simulator } from './Simulator';
+import confetti from 'canvas-confetti';
 
 // Types
 type ECL = 'L' | 'M' | 'Q' | 'H';
@@ -55,6 +56,7 @@ export const QRWorkspace = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isExporting, setIsExporting] = useState<boolean>(false);
+    const [isGenerating, setIsGenerating] = useState<boolean>(false);
 
     // Debounce input for preview performance (FR-1.5)
     // Delay slightly increased to avoid flashing during rapid typing
@@ -194,6 +196,11 @@ export const QRWorkspace = () => {
                 link.href = canvas.toDataURL('image/png');
                 link.click();
                 toast.success("QR Code exported as PNG!");
+                confetti({
+                    particleCount: 100,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                });
             } else {
                 // Generate SVG
                 const qrData = QRCode.create(debouncedValue, { errorCorrectionLevel: ecl });
@@ -206,6 +213,11 @@ export const QRWorkspace = () => {
                 link.click();
                 URL.revokeObjectURL(url);
                 toast.success("QR Code exported as SVG!");
+                confetti({
+                    particleCount: 100,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                });
             }
         } catch (e) {
             console.error("Export failed", e);
@@ -232,6 +244,10 @@ export const QRWorkspace = () => {
         // Generate QR on Canvas (FR-1.5, FR-1.6, FR-2.3, FR-2.x)
         const generateCanvasQR = async () => {
             if (!canvasRef.current) return;
+
+            setIsGenerating(true);
+            // Small delay to allow UI to show processing state and smooth animation
+            await new Promise(resolve => setTimeout(resolve, 150));
 
             try {
                 const qrData = QRCode.create(debouncedValue, { errorCorrectionLevel: ecl });
@@ -326,13 +342,14 @@ export const QRWorkspace = () => {
                 }
 
             } catch (err) {
-                console.error(err);
-                setError('Rendering failed');
+                console.error("QR Generation Error", err);
+                setError("Failed to generate QR code");
+            } finally {
+                setIsGenerating(false);
             }
         };
 
         generateCanvasQR();
-
     }, [debouncedValue, ecl, fgColor, bgColor, shape, gradientType, gradientColor2, size, margin, logo]);
 
     return (
@@ -612,14 +629,16 @@ export const QRWorkspace = () => {
                         </div>
                     </div>
 
-                    <div className="bg-white p-6 rounded-xl shadow-2xl transition-all duration-300 ring-1 ring-black/5">
+                    <div className={cn("bg-white p-6 rounded-xl shadow-2xl transition-all duration-500 ring-1 ring-black/5 relative overflow-hidden", isGenerating && "scale-95 opacity-80 blur-[1px]")}>
                         {!inputValue ? (
                             <div className="w-[300px] h-[300px] flex flex-col items-center justify-center text-muted-foreground bg-gray-50/50 rounded-lg border-2 border-dashed">
                                 <QrCode className="w-12 h-12 opacity-20 mb-3" />
                                 <span className="text-sm font-medium opacity-60">Start typing...</span>
                             </div>
                         ) : (
-                            <canvas ref={canvasRef} className="rounded-lg shadow-sm w-full h-auto max-w-[300px]" />
+                            <div key={debouncedValue + ecl + shape + gradientType + fgColor + bgColor + logo} className="animate-in fade-in zoom-in-95 duration-500">
+                                <canvas ref={canvasRef} className="rounded-lg shadow-sm w-full h-auto max-w-[300px]" />
+                            </div>
                         )}
                     </div>
 
@@ -648,7 +667,7 @@ export const QRWorkspace = () => {
 
             {/* Right Panel: Dashboard & Simulator (4 cols) */}
             <div className="md:col-span-4 space-y-4">
-                <PrivacyDashboard />
+                <PrivacyDashboard isGenerating={isGenerating} />
                 <Simulator
                     value={debouncedValue}
                     fgColor={fgColor}
