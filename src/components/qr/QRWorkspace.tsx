@@ -346,24 +346,42 @@ export const QRWorkspace = () => {
                         <TabsContent value="content" className="space-y-4 pt-4">
                             {/* Input */}
                             <div className="space-y-2">
-                                <Label className="text-xs">Content / URL</Label>
-                                <textarea
-                                    className={cn(
-                                        "w-full p-2 border rounded-md h-32 bg-background resize-none focus:ring-2 focus:ring-primary/20 outline-none transition-all text-sm",
-                                        error ? "border-destructive focus:ring-destructive/20" : "border-input"
+                                <div className="flex justify-between items-center">
+                                    <Label className="text-xs font-medium">Content / URL</Label>
+                                    {inputValue && (
+                                        <button
+                                            onClick={() => setInputValue('')}
+                                            className="text-[10px] text-muted-foreground hover:text-destructive flex items-center gap-1 transition-colors px-2 py-0.5 rounded-md hover:bg-muted"
+                                        >
+                                            <X className="w-3 h-3" />
+                                            Clear
+                                        </button>
                                     )}
-                                    placeholder="https://example.com"
-                                    value={inputValue}
-                                    onChange={(e) => setInputValue(e.target.value)}
-                                />
-                                {error ? (
-                                    <div className="flex items-center gap-2 text-destructive text-xs animate-in slide-in-from-top-1">
+                                </div>
+                                <div className="relative">
+                                    <textarea
+                                        className={cn(
+                                            "w-full p-3 border rounded-lg h-32 bg-background/50 resize-y min-h-[120px] focus:ring-2 focus:ring-primary/20 outline-none transition-all text-sm font-mono leading-relaxed",
+                                            error ? "border-destructive focus:ring-destructive/20" : "border-input hover:border-primary/50"
+                                        )}
+                                        placeholder="Enter URL, text, tel:, mailto:, etc."
+                                        value={inputValue}
+                                        onChange={(e) => setInputValue(e.target.value)}
+                                        spellCheck={false}
+                                    />
+                                    <div className="absolute bottom-2 right-2 flex justify-end">
+                                        <span className={cn(
+                                            "text-[10px] transition-colors",
+                                            inputValue.length > 2000 ? "text-destructive" : "text-muted-foreground/60"
+                                        )}>
+                                            {inputValue.length} / 2048
+                                        </span>
+                                    </div>
+                                </div>
+                                {error && (
+                                    <div className="flex items-center gap-2 text-destructive text-xs animate-in slide-in-from-top-1 bg-destructive/5 p-2 rounded-md border border-destructive/10">
                                         <AlertCircle className="w-3 h-3" />
                                         <span>{error}</span>
-                                    </div>
-                                ) : (
-                                    <div className="flex justify-between text-[10px] text-muted-foreground">
-                                        <span>{inputValue.length} / 2048</span>
                                     </div>
                                 )}
                             </div>
