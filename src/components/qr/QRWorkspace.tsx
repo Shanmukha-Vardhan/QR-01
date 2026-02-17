@@ -20,11 +20,11 @@ type ECL = 'L' | 'M' | 'Q' | 'H';
 type Shape = 'square' | 'rounded' | 'dots';
 type GradientType = 'none' | 'linear' | 'radial';
 
-const ECL_OPTIONS: { value: ECL; label: string; description: string }[] = [
-    { value: 'L', label: 'Low (7%)', description: 'Best for simple data' },
-    { value: 'M', label: 'Medium (15%)', description: 'Standard reliability' },
-    { value: 'Q', label: 'Quartile (25%)', description: 'Good for logos' },
-    { value: 'H', label: 'High (30%)', description: 'Maximum error correction' },
+const ECL_OPTIONS: { value: ECL; label: string; description: string; context: string }[] = [
+    { value: 'L', label: 'Low (7%)', description: 'Best for simple URLs', context: 'Recovers 7% data' },
+    { value: 'M', label: 'Medium (15%)', description: 'Standard reliability', context: 'Standard (15%)' },
+    { value: 'Q', label: 'Quartile (25%)', description: 'Better for small logos', context: 'Robust (25%)' },
+    { value: 'H', label: 'High (30%)', description: 'Max protection for logos', context: 'Max Safety (30%)' },
 ];
 
 const SHAPE_OPTIONS: { value: Shape; label: string }[] = [
@@ -399,22 +399,33 @@ export const QRWorkspace = () => {
                             </div>
 
                             {/* ECL Selection */}
-                            <div className="space-y-2 pt-2 border-t">
-                                <Label className="text-xs">Error Correction</Label>
+                            <div className="space-y-3 pt-4 border-t">
+                                <div className="flex items-center gap-2">
+                                    <Label className="text-xs">Error Correction</Label>
+                                    <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
+                                        Higher = More valid with logos
+                                    </span>
+                                </div>
                                 <div className="grid grid-cols-2 gap-2">
                                     {ECL_OPTIONS.map((option) => (
                                         <button
                                             key={option.value}
                                             onClick={() => setEcl(option.value)}
                                             className={cn(
-                                                "flex flex-col items-start p-1.5 rounded-md border text-left transition-all hover:bg-muted/50",
+                                                "relative flex flex-col items-start p-2 rounded-lg border text-left transition-all hover:bg-muted/50 hover:border-primary/30",
                                                 ecl === option.value
-                                                    ? "border-primary bg-primary/5 ring-1 ring-primary"
+                                                    ? "border-primary bg-primary/5 ring-1 ring-primary/20"
                                                     : "border-input bg-transparent"
                                             )}
+                                            title={option.context}
                                         >
-                                            <span className="text-xs font-semibold">{option.label.split(' ')[0]}</span>
-                                            <span className="text-[9px] text-muted-foreground line-clamp-1">{option.description}</span>
+                                            <span className="text-xs font-semibold flex items-center gap-1.5">
+                                                {option.label.split(' ')[0]}
+                                                {ecl === option.value && <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />}
+                                            </span>
+                                            <span className="text-[10px] text-muted-foreground leading-tight mt-0.5">
+                                                {option.description}
+                                            </span>
                                         </button>
                                     ))}
                                 </div>
