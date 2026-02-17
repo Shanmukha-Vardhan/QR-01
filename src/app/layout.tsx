@@ -4,11 +4,12 @@ import { Footer } from "@/components/layout/Footer";
 import { cn } from "@/lib/utils";
 import type { Metadata } from "next";
 import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
+import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
   title: "Premium QR Generator | Zero-Track, Private, & Client-Side",
   description: "Create premium, privacy-first QR codes entirely in your browser. No server tracking, no data collection. Customize with gradients, shapes, and logos.",
-  metadataBase: new URL("https://premium-qr.vercel.app"), // Placeholder URL, replace when deployed
+  metadataBase: new URL("https://premium-qr.vercel.app"),
   openGraph: {
     title: "Premium QR Generator | 100% Private",
     description: "The only QR generator that guarantees your data never leaves your device. Generate beautiful, custom QR codes instantly.",
@@ -16,7 +17,7 @@ export const metadata: Metadata = {
     siteName: "Premium QR Generator",
     images: [
       {
-        url: "/og-image.png", // This needs to be created or will 404
+        url: "/og-image.png",
         width: 1200,
         height: 630,
         alt: "Premium Zero-Track QR Generator Preview",
@@ -29,12 +30,12 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Premium QR Generator | Zero-Track Privacy",
     description: "Generate beautiful, custom QR codes entirely in your browser. No tracking, ever.",
-    images: ["/og-image.png"], // Placeholder
+    images: ["/og-image.png"],
   },
   manifest: "/manifest.json",
   icons: {
     icon: "/icon.svg",
-    apple: "/icon.svg", // Using SVG as placeholder for apple-touch-icon
+    apple: "/icon.svg",
   },
   themeColor: "#ffffff",
   appleWebApp: {
@@ -58,6 +59,7 @@ export default function RootLayout({
         </main>
         <Footer />
         <ServiceWorkerRegister />
+        <Toaster />
       </body>
     </html>
   );

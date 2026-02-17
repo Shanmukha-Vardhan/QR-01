@@ -4,7 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 import QRCode from 'qrcode';
 import { useDebounce } from '@/hooks/useDebounce';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, QrCode, Download, Copy, RefreshCw, Settings2, Palette, BoxSelect, Image as ImageIcon, X } from 'lucide-react';
+import { AlertCircle, QrCode, Download, Copy, RefreshCw, Settings2, Palette, BoxSelect, Image as ImageIcon, X, Loader2 } from 'lucide-react';
+import { toast } from "sonner";
 import { cn } from '@/lib/utils';
 import { HexColorPicker } from "react-colorful";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -53,6 +54,7 @@ export const QRWorkspace = () => {
     const [error, setError] = useState<string | null>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [isExporting, setIsExporting] = useState<boolean>(false);
 
     // Debounce input for preview performance (FR-1.5)
     // Delay slightly increased to avoid flashing during rapid typing
@@ -176,18 +178,24 @@ export const QRWorkspace = () => {
 
 
     // Handle Downloads (FR-5.1)
-    const handleDownload = (format: 'png' | 'svg') => {
+    // Handle Downloads (FR-5.1)
+    const handleDownload = async (format: 'png' | 'svg') => {
         if (!canvasRef.current || !debouncedValue) return;
 
-        if (format === 'png') {
-            const canvas = canvasRef.current;
-            const link = document.createElement('a');
-            link.download = `qr-code-${Date.now()}.png`;
-            link.href = canvas.toDataURL('image/png');
-            link.click();
-        } else {
-            // Generate SVG
-            try {
+        setIsExporting(true);
+        // Simulate a small delay for visual feedback
+        await new Promise(resolve => setTimeout(resolve, 800));
+
+        try {
+            if (format === 'png') {
+                const canvas = canvasRef.current;
+                const link = document.createElement('a');
+                link.download = `qr-code-${Date.now()}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                toast.success("QR Code exported as PNG!");
+            } else {
+                // Generate SVG
                 const qrData = QRCode.create(debouncedValue, { errorCorrectionLevel: ecl });
                 const svgString = generateSVG(qrData, size[0], margin[0]);
                 const blob = new Blob([svgString], { type: 'image/svg+xml' });
@@ -197,10 +205,14 @@ export const QRWorkspace = () => {
                 link.href = url;
                 link.click();
                 URL.revokeObjectURL(url);
-            } catch (e) {
-                console.error("SVG generation failed", e);
-                setError("Failed to generate SVG");
+                toast.success("QR Code exported as SVG!");
             }
+        } catch (e) {
+            console.error("Export failed", e);
+            toast.error("Export failed. Please try again.");
+            setError("Failed to generate export");
+        } finally {
+            setIsExporting(false);
         }
     };
 
@@ -603,20 +615,20 @@ export const QRWorkspace = () => {
                     <div className="mt-8 flex gap-3 w-full max-w-[300px]">
                         <Button
                             variant="default"
-                            disabled={!inputValue || !!error}
+                            disabled={!inputValue || !!error || isExporting}
                             className="flex-1 gap-2"
                             onClick={() => handleDownload('png')}
                         >
-                            <Download className="w-4 h-4" />
+                            {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                             PNG
                         </Button>
                         <Button
                             variant="outline"
-                            disabled={!inputValue || !!error}
+                            disabled={!inputValue || !!error || isExporting}
                             className="flex-1 gap-2"
                             onClick={() => handleDownload('svg')}
                         >
-                            <Download className="w-4 h-4" />
+                            {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                             SVG
                         </Button>
                     </div>
