@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from 'react';
-import QRCode from 'qrcode';
-import { useState } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from "@/components/ui/button";
@@ -69,7 +67,7 @@ export const Simulator = ({ value, fgColor, bgColor }: SimulatorProps) => {
                         <TabsTrigger value="poster" className="text-xs">Poster</TabsTrigger>
                     </TabsList>
 
-                    <div className="mt-4 relative bg-muted/30 rounded-lg overflow-hidden h-[240px] flex items-center justify-center border inner-shadow group">
+                    <div className="mt-4 relative bg-muted/30 rounded-lg overflow-hidden h-[240px] flex items-center justify-center border shadow-inner group">
 
                         {/* Zoom Hint */}
                         <div className="absolute top-2 right-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 text-white text-[10px] px-2 py-1 rounded backdrop-blur-sm pointer-events-none">
