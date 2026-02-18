@@ -246,8 +246,6 @@ export const QRWorkspace = () => {
             if (!canvasRef.current) return;
 
             setIsGenerating(true);
-            // Small delay to allow UI to show processing state and smooth animation
-            await new Promise(resolve => setTimeout(resolve, 150));
 
             try {
                 const qrData = QRCode.create(debouncedValue, { errorCorrectionLevel: ecl });
@@ -636,7 +634,7 @@ export const QRWorkspace = () => {
                                 <span className="text-sm font-medium opacity-60">Start typing...</span>
                             </div>
                         ) : (
-                            <div key={debouncedValue + ecl + shape + gradientType + fgColor + bgColor + logo} className="animate-in fade-in zoom-in-95 duration-500">
+                            <div className="animate-in fade-in zoom-in-95 duration-500">
                                 <canvas ref={canvasRef} className="rounded-lg shadow-sm w-full h-auto max-w-[300px]" />
                             </div>
                         )}
