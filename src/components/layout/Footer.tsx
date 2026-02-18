@@ -46,10 +46,13 @@ export const Footer = () => {
                 {/* Meta Links */}
                 <div className="flex items-center gap-6 text-xs font-medium text-muted-foreground">
                     <Link href="#privacy" className="hover:text-primary transition-colors hover:underline">
-                        Privacy Policy
+                        Privacy
                     </Link>
-                    <Link href="#terms" className="hover:text-primary transition-colors hover:underline">
-                        Terms of Use
+                    <Link href="#export" className="hover:text-primary transition-colors hover:underline">
+                        Export
+                    </Link>
+                    <Link href="#features" className="hover:text-primary transition-colors hover:underline">
+                        Features
                     </Link>
                     <span className="flex items-center gap-1 px-2 py-1 rounded bg-muted/50 border">
                         <Code2 className="w-3 h-3" />

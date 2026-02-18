@@ -33,12 +33,12 @@ export default function Home() {
       </section>
 
       {/* Main Workspace */}
-      <section className="container mx-auto px-4 -mt-10 relative z-20 pb-20">
+      <section id="workspace" className="container mx-auto px-4 -mt-10 relative z-20 pb-20 scroll-mt-20">
         <QRWorkspace />
       </section>
 
       {/* Features Overview */}
-      <section className="py-20 bg-gray-50/50 dark:bg-gray-900/20 border-t">
+      <section id="features" className="py-20 bg-gray-50/50 dark:bg-gray-900/20 border-t scroll-mt-20">
         <div className="container mx-auto px-4">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <h2 className="text-3xl font-bold mb-4">Why Choose Premium QR?</h2>
@@ -79,6 +79,52 @@ export default function Home() {
               title="Free Forever"
               description="Open source and free for personal and commercial use. No hidden fees."
             />
+          </div>
+        </div>
+      </section>
+
+      {/* Privacy & Export Sections */}
+      <section id="privacy" className="py-16 border-t scroll-mt-20">
+        <div className="container mx-auto px-4 text-center max-w-3xl">
+          <h2 className="text-3xl font-bold mb-4">Your Privacy, Our Promise</h2>
+          <p className="text-muted-foreground leading-relaxed mb-6">
+            Premium QR is built with a zero-knowledge architecture. Your data never touches our servers—
+            all QR code generation happens entirely within your browser using the HTML5 Canvas API.
+            We collect no analytics, store no cookies, and require no account.
+          </p>
+          <div className="grid sm:grid-cols-3 gap-4 text-sm">
+            <div className="p-4 rounded-lg border bg-green-50/50 dark:bg-green-950/20">
+              <p className="font-semibold text-green-700 dark:text-green-400 mb-1">No Server Requests</p>
+              <p className="text-muted-foreground text-xs">Your content stays on your device. Period.</p>
+            </div>
+            <div className="p-4 rounded-lg border bg-blue-50/50 dark:bg-blue-950/20">
+              <p className="font-semibold text-blue-700 dark:text-blue-400 mb-1">No Cookies or Tracking</p>
+              <p className="text-muted-foreground text-xs">Zero analytics. Zero fingerprinting.</p>
+            </div>
+            <div className="p-4 rounded-lg border bg-purple-50/50 dark:bg-purple-950/20">
+              <p className="font-semibold text-purple-700 dark:text-purple-400 mb-1">Open Source</p>
+              <p className="text-muted-foreground text-xs">Audit the code yourself on GitHub.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="export" className="py-16 bg-gray-50/50 dark:bg-gray-900/20 border-t scroll-mt-20">
+        <div className="container mx-auto px-4 text-center max-w-3xl">
+          <h2 className="text-3xl font-bold mb-4">Export-Ready Quality</h2>
+          <p className="text-muted-foreground leading-relaxed mb-6">
+            Download your QR codes in high-resolution PNG for digital use, or lossless SVG for
+            print-perfect results at any scale. Every export is generated directly from canvas—no compression artifacts.
+          </p>
+          <div className="flex items-center justify-center gap-6">
+            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <span className="w-3 h-3 rounded-full bg-blue-500"></span>
+              PNG — Up to 4x resolution
+            </div>
+            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <span className="w-3 h-3 rounded-full bg-purple-500"></span>
+              SVG — Infinite scalability
+            </div>
           </div>
         </div>
       </section>
